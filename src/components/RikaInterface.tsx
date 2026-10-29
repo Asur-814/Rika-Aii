@@ -11,10 +11,11 @@ import {
   Music,
   Heart,
   Loader2,
-  LogOut,
   Maximize2,
   Minimize2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  AlertCircle,
+  X
 } from "lucide-react";
 import { AudioRecorder, AudioPlayer } from "../lib/audio-utils";
 import { LiveSession, SessionState } from "../lib/live-session";
@@ -428,14 +429,14 @@ const RikaInterface: React.FC<{ profile: UserMemory | null }> = ({ profile }) =>
             className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] px-6 py-4 bg-red-950/40 border border-red-500/30 backdrop-blur-xl rounded-2xl flex items-center gap-4 shadow-2xl max-w-md w-full"
           >
             <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
-              <LogOut className="w-5 h-5 rotate-180" />
+              <AlertCircle className="w-5 h-5" />
             </div>
             <div className="flex-1">
               <h5 className="text-[10px] font-black uppercase text-red-400 mb-1">Neural_Interface_Error</h5>
               <p className="text-xs text-red-100/70 font-medium leading-tight">{errorMsg}</p>
             </div>
-            <button onClick={() => setErrorMsg(null)} className="text-slate-500 hover:text-white transition-colors">
-              <LogOut className="w-4 h-4 rotate-90" />
+            <button onClick={() => setErrorMsg(null)} className="text-slate-500 hover:text-white transition-colors" title="Dismiss">
+              <X className="w-4 h-4" />
             </button>
           </motion.div>
         )}

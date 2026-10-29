@@ -1,5 +1,5 @@
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, query, orderBy, deleteDoc } from 'firebase/firestore';
-import { db, auth } from './firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from './firebase';
 
 export interface UserMemory {
   nickname?: string;
@@ -33,141 +33,159 @@ export interface ChatHistoryItem {
   timestamp: any;
 }
 
-export async function getChatHistory() {
-  const user = auth.currentUser;
-  if (!user) return [];
+export const DEFAULT_USER_PROFILE: UserMemory = {
+  nickname: 'Harshit',
+  aiName: 'Rika',
+  bio: 'Living legend and creator of Rika',
+  preferences: {
+    sassyLevel: 'mild',
+    tone: 'sassy',
+    favoriteTopic: 'Creativity & Technology'
+  },
+  settings: {
+    audioVolume: 80,
+    voiceId: 'Kore',
+    avatarId: 'led_face',
+    theme: 'dark'
+  }
+};
 
+const PROFILE_KEY = 'rika_user_profile';
+const HISTORY_KEY = 'rika_chat_history';
+const MEMORY_KEY = 'rika_longterm_memory';
+
+export function getLocalProfile(): UserMemory {
   try {
-    const historyRef = collection(db, 'users', user.uid, 'history');
-    const q = query(historyRef, orderBy('timestamp', 'desc'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({
-      id: d.id,
-      ...d.data()
-    })) as ChatHistoryItem[];
-  } catch (e: any) {
-    if (e.code === 'unavailable' || e.message?.includes('offline')) {
-      console.warn("History fetch skipped (offline).");
-    } else {
-      console.error("Error fetching history:", e);
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_USER_PROFILE, ...parsed };
     }
-    return [];
+  } catch (err) {
+    console.warn("Error reading local profile:", err);
+  }
+  return DEFAULT_USER_PROFILE;
+}
+
+export async function getUserProfile(): Promise<UserMemory> {
+  const local = getLocalProfile();
+  try {
+    const userRef = doc(db, 'users', 'default_user');
+    const snap = await getDoc(userRef);
+    if (snap.exists()) {
+      const data = snap.data() as UserMemory;
+      const merged = { ...local, ...data };
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+  } catch {
+    // Firestore might be in local mode or offline, use local storage
+  }
+  return local;
+}
+
+export async function saveUserProfile(data: Partial<UserMemory>) {
+  try {
+    const current = getLocalProfile();
+    const updated = {
+      ...current,
+      ...data,
+      preferences: {
+        ...current.preferences,
+        ...data.preferences
+      },
+      settings: {
+        ...current.settings,
+        ...data.settings
+      }
+    };
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(updated));
+
+    // Optional firestore sync
+    try {
+      const userRef = doc(db, 'users', 'default_user');
+      await setDoc(userRef, {
+        ...updated,
+        userId: 'default_user',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    } catch {
+      // Ignore firestore offline / unauthenticated errors
+    }
+  } catch (e) {
+    console.error("Could not save user profile:", e);
+  }
+}
+
+export async function getChatHistory(): Promise<ChatHistoryItem[]> {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {
+    console.warn("Error reading history from storage:", e);
+  }
+  return [];
+}
+
+export async function saveHistoryItem(title: string, preview: string) {
+  try {
+    const list = await getChatHistory();
+    const newItem: ChatHistoryItem = {
+      id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      title,
+      preview,
+      timestamp: new Date().toISOString()
+    };
+    const updated = [newItem, ...list];
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated.slice(0, 50)));
+  } catch (e) {
+    console.error("Error saving history item:", e);
   }
 }
 
 export async function deleteHistoryItem(id: string) {
-  const user = auth.currentUser;
-  if (!user) return;
   try {
-    const docRef = doc(db, 'users', user.uid, 'history', id);
-    await deleteDoc(docRef);
+    const list = await getChatHistory();
+    const updated = list.filter(item => item.id !== id);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
   } catch (e) {
     console.error("Error deleting history item:", e);
   }
 }
 
 export async function updateHistoryItem(id: string, data: Partial<ChatHistoryItem>) {
-  const user = auth.currentUser;
-  if (!user) return;
   try {
-    const docRef = doc(db, 'users', user.uid, 'history', id);
-    await updateDoc(docRef, data);
+    const list = await getChatHistory();
+    const updated = list.map(item => item.id === id ? { ...item, ...data } : item);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
   } catch (e) {
     console.error("Error updating history item:", e);
   }
 }
 
-export async function saveHistoryItem(title: string, preview: string) {
-  const user = auth.currentUser;
-  if (!user) return;
-  try {
-    const historyRef = collection(db, 'users', user.uid, 'history');
-    await setDoc(doc(historyRef), {
-      userId: user.uid,
-      title,
-      preview,
-      timestamp: serverTimestamp()
-    });
-  } catch (e: any) {
-    if (e.code === 'unavailable' || e.message?.includes('offline')) {
-      console.warn("History save queued (offline).");
-    } else {
-      console.error("Error saving history item:", e);
-    }
-  }
-}
-
-export async function getUserProfile() {
-  const user = auth.currentUser;
-  if (!user) return null;
-
-  try {
-    const userRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userRef);
-    
-    if (snap.exists()) {
-      return snap.data() as UserMemory;
-    }
-  } catch (e) {
-    console.warn("Could not fetch user profile (offline?):", e);
-  }
-  return null;
-}
-
-export async function saveUserProfile(data: Partial<UserMemory>) {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  try {
-    const userRef = doc(db, 'users', user.uid);
-    await setDoc(userRef, {
-      ...data,
-      userId: user.uid,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  } catch (e: any) {
-    if (e.code === 'unavailable' || e.message?.includes('offline')) {
-      console.warn("User profile update queued (offline).");
-    } else {
-      console.error("Could not save user profile:", e);
-    }
-  }
-}
-
 export async function getLongTermMemory() {
-  const user = auth.currentUser;
-  if (!user) return null;
-
   try {
-    const memoryRef = doc(db, 'users', user.uid, 'memory', 'longterm');
-    const snap = await getDoc(memoryRef);
-    
-    if (snap.exists()) {
-      return snap.data();
+    const raw = localStorage.getItem(MEMORY_KEY);
+    if (raw) {
+      return JSON.parse(raw);
     }
   } catch (e) {
-    console.warn("Could not fetch long-term memory (offline?):", e);
+    console.warn("Could not fetch long-term memory:", e);
   }
   return null;
 }
 
 export async function saveLongTermMemory(summary: string, keyFacts: string[]) {
-  const user = auth.currentUser;
-  if (!user) return;
-
   try {
-    const memoryRef = doc(db, 'users', user.uid, 'memory', 'longterm');
-    await setDoc(memoryRef, {
-      userId: user.uid,
+    const data = {
       summary,
       keyFacts,
-      lastTurnAt: serverTimestamp()
-    });
-  } catch (e: any) {
-    if (e.code === 'unavailable' || e.message?.includes('offline')) {
-      console.warn("Memory save queued (offline).");
-    } else {
-      console.error("Error saving long term memory:", e);
-    }
+      lastTurnAt: new Date().toISOString()
+    };
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Error saving long term memory:", e);
   }
 }

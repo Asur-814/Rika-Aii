@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, User, MessageSquare, Volume2, Settings, LogOut, Menu, X } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
+import { Home, User, MessageSquare, Volume2, Settings, Menu, X } from 'lucide-react';
 import { UserMemory } from '../lib/memory';
 
 interface SidebarProps {
@@ -22,7 +20,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, profile }) =
     { id: 'settings', icon: Settings, label: 'Settings' },
   ];
 
-  const handleLogout = () => signOut(auth);
   
   const isLight = profile?.settings?.theme === 'light';
 
@@ -110,17 +107,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, profile }) =
                   </button>
                 ))}
               </div>
-
-              {/* Logout */}
-              <button 
-                onClick={handleLogout}
-                className={`mt-auto flex items-center gap-4 p-4 rounded-2xl ml-6 transition-all group ${
-                    isLight ? 'text-slate-400 hover:bg-red-50 hover:text-red-600' : 'text-slate-500 hover:bg-red-500/10 hover:text-red-400'
-                }`}
-              >
-                <LogOut className="w-5 h-5" />
-                <span className="text-sm font-bold tracking-tight">Sign Out</span>
-              </button>
             </motion.div>
           </>
         )}
