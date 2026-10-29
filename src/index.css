@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --sat: env(safe-area-inset-top);
+    --sar: env(safe-area-inset-right);
+    --sab: env(safe-area-inset-bottom);
+    --sal: env(safe-area-inset-left);
+  }
+
+  html, body {
+    @apply bg-black overflow-hidden;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    touch-action: manipulation;
+  }
+
+  #root {
+    @apply h-full w-full;
+  }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+div#root > div > div > div > div > div:nth-of-type(2) {
+  background-color: #000000;
+  color: #c550ff;
+}
+
+div#root > div > main > div > div:nth-of-type(3) > div:nth-of-type(3) > div:nth-of-type(2) {
+  color: #003ac6;
+}

@@ -1,0 +1,40 @@
+{
+  "name": "Rika Assistant",
+  "short_name": "Rika",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/icon1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "description": "Rika – Your Personal AI Assistant\nMore than an assistant, Rika is like your virtual girlfriend.\nShe understands you, supports you, and is always here for you.",
+  "lang": "en",
+  "orientation": "portrait",
+  "categories": [
+    "entertainment",
+    "personalization",
+    "productivity",
+    "utilities"
+  ],
+  "id": "Rika",
+  "dir": "ltr",
+  "scope": "/",
+  "display_override": [
+    "browser",
+    "fullscreen",
+    "standalone",
+    "window-controls-overlay"
+  ]
+}

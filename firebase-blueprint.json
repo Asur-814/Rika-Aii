@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores user preferences and global state for Rika's memory.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "nickname": { "type": "string" },
+        "aiName": { "type": "string" },
+        "bio": { "type": "string" },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "sassyLevel": { "type": "string", "enum": ["mild", "spicy", "extra"] },
+            "tone": { "type": "string", "enum": ["sassy", "caring", "helpful", "playful"] },
+            "favoriteTopic": { "type": "string" }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "audioVolume": { "type": "number" },
+            "voiceId": { "type": "string" },
+            "avatarId": { "type": "string" },
+            "customAvatarUrl": { "type": "string" },
+            "geminiApiKey": { "type": "string" },
+            "theme": { "type": "string" }
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId"]
+    },
+    "ChatHistory": {
+      "title": "Chat History",
+      "description": "Individual conversation sessions.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "preview": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ConversationMemory": {
+      "title": "Conversation Memory",
+      "description": "Compact summaries or key points from past chats to give Zoya 'long-term memory'.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "summary": { "type": "string" },
+        "keyFacts": { "type": "array", "items": { "type": "string" } },
+        "lastTurnAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile and preferences."
+    },
+    "/users/{userId}/memory/longterm": {
+      "schema": "ConversationMemory",
+      "description": "Long-term memory for Zoya to stay in character and remember the user."
+    },
+    "/users/{userId}/history": {
+      "schema": "ChatHistory",
+      "description": "History of conversational sessions."
+    }
+  }
+}

@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['userId']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             (!('nickname' in data) || (data.nickname is string && data.nickname.size() <= 64)) &&
+             (!('aiName' in data) || (data.aiName is string && data.aiName.size() <= 64)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 512)) &&
+             (!('preferences' in data) || (data.preferences is map)) &&
+             (!('settings' in data) || (data.settings is map)) &&
+             (!('updatedAt' in data) || (data.updatedAt == request.time));
+    }
+
+    function isValidHistory(data) {
+      return data.keys().hasAll(['userId', 'title', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 256 &&
+             (!('preview' in data) || (data.preview is string && data.preview.size() <= 1024)) &&
+             data.timestamp == request.time;
+    }
+
+    function isValidMemory(data) {
+      return data.keys().hasAll(['userId', 'summary']) &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.summary is string && data.summary.size() <= 5000 &&
+             (!('keyFacts' in data) || (data.keyFacts is list && data.keyFacts.size() <= 50)) &&
+             (!('lastTurnAt' in data) || (data.lastTurnAt == request.time));
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidId(userId) && 
+                     isValidUserProfile(request.resource.data) &&
+                     request.resource.data.userId == resource.data.userId;
+
+      match /memory/{memoryId} {
+        allow get: if isOwner(userId) && isValidId(memoryId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(memoryId) && isValidMemory(request.resource.data);
+        allow update: if isOwner(userId) && isValidId(memoryId) && 
+                       isValidMemory(request.resource.data) &&
+                       request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) && isValidId(memoryId);
+      }
+
+      match /history/{historyId} {
+        allow get: if isOwner(userId) && isValidId(historyId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(historyId) && isValidHistory(request.resource.data);
+        allow delete: if isOwner(userId) && isValidId(historyId);
+      }
+    }
+  }
+}

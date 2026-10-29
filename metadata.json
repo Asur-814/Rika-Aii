@@ -1,0 +1,11 @@
+{
+  "name": "Rika - Virtual Sassy Assistant",
+  "description": "A sassy, playful, and high-tech AI companion named Rika with neural vision and device control capabilities.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation",
+    "camera",
+    "display-capture"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
